@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from core.variables.variables import Variable
+from core.variables.variables import VariableUnion
 
 
 class CommandType(StrEnum):
@@ -46,7 +46,7 @@ class PauseCommand(GraphEngineCommand):
 class VariableUpdate(BaseModel):
     """Represents a single variable update instruction."""
 
-    value: Variable = Field(description="New variable value")
+    value: VariableUnion = Field(description="New variable value")
 
 
 class UpdateVariablesCommand(GraphEngineCommand):

@@ -100,12 +100,9 @@ class LoginApi(Resource):
         if is_login_error_rate_limit:
             raise EmailPasswordLoginLimitError()
 
-        invite_token = args.invite_token
         invitation_data: dict[str, Any] | None = None
-        if invite_token:
-            invitation_data = RegisterService.get_invitation_with_case_fallback(None, request_email, invite_token)
-            if invitation_data is None:
-                invite_token = None
+        if args.invite_token:
+            invitation_data = RegisterService.get_invitation_if_token_valid(None, args.email, args.invite_token)
 
         try:
             if invitation_data:

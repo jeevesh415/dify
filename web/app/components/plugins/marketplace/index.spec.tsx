@@ -60,7 +60,7 @@ vi.mock('@/service/use-plugins', () => ({
 // Mock tanstack query
 const mockFetchNextPage = vi.fn()
 const mockHasNextPage = false
-let mockInfiniteQueryData: { pages: Array<{ plugins: unknown[], total: number, page: number, page_size: number }> } | undefined
+let mockInfiniteQueryData: { pages: Array<{ plugins: unknown[], total: number, page: number, pageSize: number }> } | undefined
 let capturedInfiniteQueryFn: ((ctx: { pageParam: number, signal: AbortSignal }) => Promise<unknown>) | null = null
 let capturedQueryFn: ((ctx: { signal: AbortSignal }) => Promise<unknown>) | null = null
 let capturedGetNextPageParam: ((lastPage: { page: number, page_size: number, total: number }) => number | undefined) | null = null

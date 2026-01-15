@@ -2,7 +2,7 @@ import json
 from collections.abc import Mapping, MutableMapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from core.variables import SegmentType, VariableBase
+from core.variables import SegmentType, Variable
 from core.variables.consts import SELECTORS_LENGTH
 from core.workflow.constants import CONVERSATION_VARIABLE_NODE_ID
 from core.workflow.enums import NodeType, WorkflowNodeExecutionStatus

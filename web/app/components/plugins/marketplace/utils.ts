@@ -4,12 +4,12 @@ import type {
   MarketplaceCollection,
   PluginsSearchParams,
 } from '@/app/components/plugins/marketplace/types'
-import type { Plugin } from '@/app/components/plugins/types'
+import type { Plugin, PluginsFromMarketplaceResponse } from '@/app/components/plugins/types'
 import { PluginCategoryEnum } from '@/app/components/plugins/types'
 import {
   MARKETPLACE_API_PREFIX,
 } from '@/config'
-import { marketplaceClient } from '@/service/client'
+import { postMarketplace } from '@/service/base'
 import { getMarketplaceUrl } from '@/utils/var'
 import { PLUGIN_TYPE_SEARCH_MAP } from './constants'
 
@@ -122,42 +122,42 @@ export const getMarketplacePlugins = async (
       plugins: [] as Plugin[],
       total: 0,
       page: 1,
-      page_size: 40,
+      pageSize: 40,
     }
   }
 
   const {
     query,
-    sort_by,
-    sort_order,
+    sortBy,
+    sortOrder,
     category,
     tags,
     type,
-    page_size = 40,
+    pageSize = 40,
   } = queryParams
+  const pluginOrBundle = type === 'bundle' ? 'bundles' : 'plugins'
 
   try {
-    const res = await marketplaceClient.searchAdvanced({
-      params: {
-        kind: type === 'bundle' ? 'bundles' : 'plugins',
-      },
+    const res = await postMarketplace<{ data: PluginsFromMarketplaceResponse }>(`/${pluginOrBundle}/search/advanced`, {
       body: {
         page: pageParam,
-        page_size,
+        page_size: pageSize,
         query,
-        sort_by,
-        sort_order,
+        sort_by: sortBy,
+        sort_order: sortOrder,
         category: category !== 'all' ? category : '',
         tags,
+        type,
       },
-    }, { signal })
+      signal,
+    })
     const resPlugins = res.data.bundles || res.data.plugins || []
 
     return {
       plugins: resPlugins.map(plugin => getFormattedPlugin(plugin)),
       total: res.data.total,
       page: pageParam,
-      page_size,
+      pageSize,
     }
   }
   catch {
@@ -165,7 +165,7 @@ export const getMarketplacePlugins = async (
       plugins: [],
       total: 0,
       page: pageParam,
-      page_size,
+      pageSize,
     }
   }
 }
