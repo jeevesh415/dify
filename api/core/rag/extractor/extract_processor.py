@@ -94,6 +94,7 @@ class ExtractProcessor:
         cls, extract_setting: ExtractSetting, is_automatic: bool = False, file_path: str | None = None
     ) -> list[Document]:
         if extract_setting.datasource_type == DatasourceType.FILE:
+            upload_file = extract_setting.upload_file
             with tempfile.TemporaryDirectory() as temp_dir:
                 upload_file = extract_setting.upload_file
                 if not file_path:
@@ -104,6 +105,7 @@ class ExtractProcessor:
                     storage.download(upload_file.key, file_path)
                 input_file = Path(file_path)
                 file_extension = input_file.suffix.lower()
+                assert upload_file is not None, "upload_file is required"
                 etl_type = dify_config.ETL_TYPE
                 extractor: BaseExtractor | None = None
                 if etl_type == "Unstructured":
@@ -181,34 +183,35 @@ class ExtractProcessor:
             return extractor.extract()
         elif extract_setting.datasource_type == DatasourceType.WEBSITE:
             assert extract_setting.website_info is not None, "website_info is required"
-            if extract_setting.website_info.provider == "firecrawl":
-                extractor = FirecrawlWebExtractor(
-                    url=extract_setting.website_info.url,
-                    job_id=extract_setting.website_info.job_id,
-                    tenant_id=extract_setting.website_info.tenant_id,
-                    mode=extract_setting.website_info.mode,
-                    only_main_content=extract_setting.website_info.only_main_content,
-                )
-                return extractor.extract()
-            elif extract_setting.website_info.provider == "watercrawl":
-                extractor = WaterCrawlWebExtractor(
-                    url=extract_setting.website_info.url,
-                    job_id=extract_setting.website_info.job_id,
-                    tenant_id=extract_setting.website_info.tenant_id,
-                    mode=extract_setting.website_info.mode,
-                    only_main_content=extract_setting.website_info.only_main_content,
-                )
-                return extractor.extract()
-            elif extract_setting.website_info.provider == "jinareader":
-                extractor = JinaReaderWebExtractor(
-                    url=extract_setting.website_info.url,
-                    job_id=extract_setting.website_info.job_id,
-                    tenant_id=extract_setting.website_info.tenant_id,
-                    mode=extract_setting.website_info.mode,
-                    only_main_content=extract_setting.website_info.only_main_content,
-                )
-                return extractor.extract()
-            else:
-                raise ValueError(f"Unsupported website provider: {extract_setting.website_info.provider}")
+            match extract_setting.website_info.provider:
+                case "firecrawl":
+                    extractor = FirecrawlWebExtractor(
+                        url=extract_setting.website_info.url,
+                        job_id=extract_setting.website_info.job_id,
+                        tenant_id=extract_setting.website_info.tenant_id,
+                        mode=extract_setting.website_info.mode,
+                        only_main_content=extract_setting.website_info.only_main_content,
+                    )
+                    return extractor.extract()
+                case "watercrawl":
+                    extractor = WaterCrawlWebExtractor(
+                        url=extract_setting.website_info.url,
+                        job_id=extract_setting.website_info.job_id,
+                        tenant_id=extract_setting.website_info.tenant_id,
+                        mode=extract_setting.website_info.mode,
+                        only_main_content=extract_setting.website_info.only_main_content,
+                    )
+                    return extractor.extract()
+                case "jinareader":
+                    extractor = JinaReaderWebExtractor(
+                        url=extract_setting.website_info.url,
+                        job_id=extract_setting.website_info.job_id,
+                        tenant_id=extract_setting.website_info.tenant_id,
+                        mode=extract_setting.website_info.mode,
+                        only_main_content=extract_setting.website_info.only_main_content,
+                    )
+                    return extractor.extract()
+                case _:
+                    raise ValueError(f"Unsupported website provider: {extract_setting.website_info.provider}")
         else:
             raise ValueError(f"Unsupported datasource type: {extract_setting.datasource_type}")

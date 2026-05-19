@@ -1,6 +1,7 @@
 'use client'
 import type { FC } from 'react'
 import { cn } from '@langgenius/dify-ui/cn'
+import { toast } from '@langgenius/dify-ui/toast'
 import {
   RiDeleteBinLine,
   RiUploadCloud2Line,
@@ -10,7 +11,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ActionButton from '@/app/components/base/action-button'
 import { Yaml as YamlIcon } from '@/app/components/base/icons/src/public/files'
-import { toast } from '@/app/components/base/ui/toast'
 import { formatFileSize } from '@/utils/format'
 
 type Props = {
@@ -112,7 +112,13 @@ const Uploader: FC<Props> = ({
               <RiUploadCloud2Line className="h-6 w-6 text-text-tertiary" />
               <div className="text-text-tertiary">
                 {t('dslUploader.button', { ns: 'app' })}
-                <span className="cursor-pointer pl-1 text-text-accent" onClick={selectHandle}>{t('dslUploader.browse', { ns: 'app' })}</span>
+                <button
+                  type="button"
+                  className="inline cursor-pointer border-none bg-transparent p-0 pl-1 text-left text-text-accent focus-visible:ring-1 focus-visible:ring-components-input-border-active focus-visible:outline-hidden"
+                  onClick={selectHandle}
+                >
+                  {t('dslUploader.browse', { ns: 'app' })}
+                </button>
               </div>
             </div>
             {dragging && <div ref={dragRef} className="absolute top-0 left-0 h-full w-full" />}

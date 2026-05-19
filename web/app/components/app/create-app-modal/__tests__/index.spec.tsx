@@ -1,6 +1,6 @@
 import type { App } from '@/types/app'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NEED_REFRESH_APP_LIST_KEY } from '@/config'
 import { useAppContext } from '@/context/app-context'
@@ -41,7 +41,7 @@ const toastMocks = vi.hoisted(() => ({
   mockToastSuccess: vi.fn(),
   mockToastError: vi.fn(),
 }))
-vi.mock('@/app/components/base/ui/toast', () => ({
+vi.mock('@langgenius/dify-ui/toast', () => ({
   toast: {
     success: toastMocks.mockToastSuccess,
     error: toastMocks.mockToastError,
@@ -121,7 +121,6 @@ const renderModal = () => {
 
 describe('CreateAppModal', () => {
   const mockSetItem = vi.fn()
-  const originalLocalStorage = window.localStorage
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -153,13 +152,6 @@ describe('CreateAppModal', () => {
     })
   })
 
-  afterAll(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: originalLocalStorage,
-      writable: true,
-    })
-  })
-
   it('creates an app, notifies success, and fires callbacks', async () => {
     const mockApp: Partial<App> = { id: 'app-1', mode: AppModeEnum.ADVANCED_CHAT }
     mockCreateApp.mockResolvedValue(mockApp as App)
@@ -178,7 +170,7 @@ describe('CreateAppModal', () => {
       mode: AppModeEnum.ADVANCED_CHAT,
     }))
 
-    expect(mockTrackCreateApp).toHaveBeenCalledWith({ appMode: AppModeEnum.ADVANCED_CHAT })
+    expect(mockTrackCreateApp).toHaveBeenCalledWith({ source: 'studio_blank', appMode: AppModeEnum.ADVANCED_CHAT })
     expect(mockToastSuccess).toHaveBeenCalledWith('app.newApp.appCreated')
     expect(onSuccess).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalled()

@@ -5,6 +5,8 @@ import type { AnnotationItem, AnnotationItemBasic } from './type'
 import type { AnnotationReplyConfig } from '@/models/debug'
 import type { App } from '@/types/app'
 import { cn } from '@langgenius/dify-ui/cn'
+import { Switch } from '@langgenius/dify-ui/switch'
+import { toast } from '@langgenius/dify-ui/toast'
 import { RiEqualizer2Line } from '@remixicon/react'
 import { useDebounce } from 'ahooks'
 import * as React from 'react'
@@ -15,8 +17,6 @@ import ConfigParamModal from '@/app/components/base/features/new-feature-panel/a
 import { MessageFast } from '@/app/components/base/icons/src/vender/solid/communication'
 import Loading from '@/app/components/base/loading'
 import Pagination from '@/app/components/base/pagination'
-import Switch from '@/app/components/base/switch'
-import { toast } from '@/app/components/base/ui/toast'
 import AnnotationFullModal from '@/app/components/billing/annotation-full/modal'
 import { APP_PAGE_LIMIT } from '@/config'
 import { useProviderContext } from '@/context/provider-context'
@@ -26,7 +26,7 @@ import { sleep } from '@/utils'
 import EmptyElement from './empty-element'
 import Filter from './filter'
 import HeaderOpts from './header-opts'
-import List from './list'
+import { List } from './list'
 import { AnnotationEnableStatus, JobStatus } from './type'
 import ViewAnnotationModal from './view-annotation-modal'
 
@@ -176,7 +176,7 @@ const Annotation: FC<Props> = (props) => {
                   >
                   </Switch>
                   {annotationConfig?.enabled && (
-                    <div className="flex items-center pl-1.5">
+                    <div className="flex items-center pr-1 pl-1.5">
                       <div className="mr-1 h-3.5 w-px shrink-0 bg-divider-subtle"></div>
                       <ActionButton onClick={() => setIsShowEdit(true)}>
                         <RiEqualizer2Line className="h-4 w-4 text-text-tertiary" />
@@ -210,7 +210,6 @@ const Annotation: FC<Props> = (props) => {
                   selectedIds={selectedIds}
                   onSelectedIdsChange={setSelectedIds}
                   onBatchDelete={handleBatchDelete}
-                  onCancel={() => setSelectedIds([])}
                 />
               )
             : <div className="flex h-full grow items-center justify-center"><EmptyElement /></div>}

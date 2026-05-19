@@ -2,7 +2,9 @@
 import type { FC } from 'react'
 import type { ExternalDataTool } from '@/models/common'
 import type { PromptRole, PromptVariable } from '@/models/debug'
+import { Button } from '@langgenius/dify-ui/button'
 import { cn } from '@langgenius/dify-ui/cn'
+import { toast } from '@langgenius/dify-ui/toast'
 import {
   RiDeleteBinLine,
   RiErrorWarningFill,
@@ -18,15 +20,9 @@ import {
   Copy,
   CopyCheck,
 } from '@/app/components/base/icons/src/vender/line/files'
+import { Infotip } from '@/app/components/base/infotip'
 import PromptEditor from '@/app/components/base/prompt-editor'
 import { INSERT_VARIABLE_VALUE_BLOCK_COMMAND } from '@/app/components/base/prompt-editor/plugins/variable-block'
-import { Button } from '@/app/components/base/ui/button'
-import { toast } from '@/app/components/base/ui/toast'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/app/components/base/ui/tooltip'
 import ConfigContext from '@/context/debug-configuration'
 import { useEventEmitterContextContext } from '@/context/event-emitter'
 import { useModalContext } from '@/context/modal-context'
@@ -96,8 +92,8 @@ const AdvancedPromptInput: FC<Props> = ({
       },
       onValidateBeforeSaveCallback: (newExternalDataTool: ExternalDataTool) => {
         for (let i = 0; i < promptVariables.length; i++) {
-          if (promptVariables[i].key === newExternalDataTool.variable) {
-            toast.error(t('varKeyError.keyAlreadyExists', { ns: 'appDebug', key: promptVariables[i].key }))
+          if (promptVariables[i]!.key === newExternalDataTool.variable) {
+            toast.error(t('varKeyError.keyAlreadyExists', { ns: 'appDebug', key: promptVariables[i]!.key }))
             return false
           }
         }
@@ -183,18 +179,13 @@ const AdvancedPromptInput: FC<Props> = ({
                         <div className="text-sm font-semibold text-indigo-800 uppercase">
                           {t('pageTitle.line1', { ns: 'appDebug' })}
                         </div>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={(
-                              <span className="ml-1 i-ri-question-line h-4 w-4 shrink-0 text-text-quaternary" />
-                            )}
-                          />
-                          <TooltipContent>
-                            <div className="w-[180px]">
-                              {t('promptTip', { ns: 'appDebug' })}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
+                        <Infotip
+                          aria-label={t('promptTip', { ns: 'appDebug' })}
+                          className="ml-1"
+                          popupClassName="w-[180px]"
+                        >
+                          {t('promptTip', { ns: 'appDebug' })}
+                        </Infotip>
                       </div>
                     )}
                 <div className={cn(s.optionWrap, 'items-center space-x-1')}>

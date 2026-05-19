@@ -1,9 +1,9 @@
+import { Button } from '@langgenius/dify-ui/button'
 import { cn } from '@langgenius/dify-ui/cn'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import InputsFormContent from '@/app/components/base/chat/embedded-chatbot/inputs-form/content'
 import Divider from '@/app/components/base/divider'
-import { Button } from '@/app/components/base/ui/button'
 import { AppSourceType } from '@/service/share'
 import { useEmbeddedChatbotContext } from '../context'
 
@@ -56,7 +56,6 @@ const InputsFormNode = ({
               size="small"
               variant="ghost"
               onClick={() => setCollapsed(false)}
-              data-testid="inputs-form-edit-button"
             >
               {t('operation.edit', { ns: 'common' })}
             </Button>
@@ -67,7 +66,6 @@ const InputsFormNode = ({
               size="small"
               variant="ghost"
               onClick={() => setCollapsed(true)}
-              data-testid="inputs-form-close-button"
             >
               {t('operation.close', { ns: 'common' })}
             </Button>
@@ -84,7 +82,6 @@ const InputsFormNode = ({
               variant="primary"
               className="w-full"
               onClick={() => handleStartChat(() => setCollapsed(true))}
-              data-testid="inputs-form-start-chat-button"
               style={
                 themeBuilder?.theme
                   ? {

@@ -8,12 +8,13 @@ from werkzeug.exceptions import Forbidden
 import controllers.console.tag.tags as module
 from controllers.console import console_ns
 from controllers.console.tag.tags import (
-    TagBindingCreateApi,
-    TagBindingDeleteApi,
+    TagBindingCollectionApi,
+    TagBindingRemoveApi,
     TagListApi,
     TagUpdateDeleteApi,
 )
 from models.enums import TagType
+from services.tag_service import UpdateTagPayload
 
 
 def unwrap(func):
@@ -73,7 +74,7 @@ def payload_patch():
 
 
 class TestTagListApi:
-    def test_get_success(self, app):
+    def test_get_success(self, app: Flask):
         api = TagListApi()
         method = unwrap(api.get)
 
@@ -100,7 +101,7 @@ class TestTagListApi:
         assert status == 200
         assert result == [{"id": "1", "name": "tag", "type": "knowledge", "binding_count": "1"}]
 
-    def test_post_success(self, app, admin_user, tag, payload_patch):
+    def test_post_success(self, app: Flask, admin_user, tag, payload_patch):
         api = TagListApi()
         method = unwrap(api.post)
 
@@ -124,7 +125,7 @@ class TestTagListApi:
         assert result["name"] == "test-tag"
         assert result["binding_count"] == "0"
 
-    def test_post_forbidden(self, app, readonly_user, payload_patch):
+    def test_post_forbidden(self, app: Flask, readonly_user, payload_patch):
         api = TagListApi()
         method = unwrap(api.post)
 
@@ -143,11 +144,11 @@ class TestTagListApi:
 
 
 class TestTagUpdateDeleteApi:
-    def test_patch_success(self, app, admin_user, tag, payload_patch):
+    def test_patch_success(self, app: Flask, admin_user, tag, payload_patch):
         api = TagUpdateDeleteApi()
         method = unwrap(api.patch)
 
-        payload = {"name": "updated", "type": "knowledge"}
+        payload = {"name": "updated"}
 
         with app.test_request_context("/", json=payload):
             with (
@@ -159,7 +160,7 @@ class TestTagUpdateDeleteApi:
                 patch(
                     "controllers.console.tag.tags.TagService.update_tags",
                     return_value=tag,
-                ),
+                ) as update_tags_mock,
                 patch(
                     "controllers.console.tag.tags.TagService.get_tag_binding_count",
                     return_value=3,
@@ -168,9 +169,12 @@ class TestTagUpdateDeleteApi:
                 result, status = method(api, "tag-1")
 
         assert status == 200
+        update_payload, tag_id = update_tags_mock.call_args.args
+        assert update_payload == UpdateTagPayload(name="updated")
+        assert tag_id == "tag-1"
         assert result["binding_count"] == "3"
 
-    def test_patch_forbidden(self, app, readonly_user, payload_patch):
+    def test_patch_forbidden(self, app: Flask, readonly_user, payload_patch):
         api = TagUpdateDeleteApi()
         method = unwrap(api.patch)
 
@@ -187,7 +191,7 @@ class TestTagUpdateDeleteApi:
                 with pytest.raises(Forbidden):
                     method(api, "tag-1")
 
-    def test_delete_success(self, app, admin_user):
+    def test_delete_success(self, app: Flask, admin_user):
         api = TagUpdateDeleteApi()
         method = unwrap(api.delete)
 
@@ -205,9 +209,9 @@ class TestTagUpdateDeleteApi:
         assert status == 204
 
 
-class TestTagBindingCreateApi:
-    def test_create_success(self, app, admin_user, payload_patch):
-        api = TagBindingCreateApi()
+class TestTagBindingCollectionApi:
+    def test_create_success(self, app: Flask, admin_user, payload_patch):
+        api = TagBindingCollectionApi()
         method = unwrap(api.post)
 
         payload = {
@@ -231,8 +235,8 @@ class TestTagBindingCreateApi:
         assert status == 200
         assert result["result"] == "success"
 
-    def test_create_forbidden(self, app, readonly_user, payload_patch):
-        api = TagBindingCreateApi()
+    def test_create_forbidden(self, app: Flask, readonly_user, payload_patch):
+        api = TagBindingCollectionApi()
         method = unwrap(api.post)
 
         with app.test_request_context("/", json={}):
@@ -247,13 +251,13 @@ class TestTagBindingCreateApi:
                     method(api)
 
 
-class TestTagBindingDeleteApi:
-    def test_remove_success(self, app, admin_user, payload_patch):
-        api = TagBindingDeleteApi()
+class TestTagBindingRemoveApi:
+    def test_remove_success(self, app: Flask, admin_user, payload_patch):
+        api = TagBindingRemoveApi()
         method = unwrap(api.post)
 
         payload = {
-            "tag_id": "tag-1",
+            "tag_ids": ["tag-1", "tag-2"],
             "target_id": "target-1",
             "type": "knowledge",
         }
@@ -270,11 +274,13 @@ class TestTagBindingDeleteApi:
                 result, status = method(api)
 
         delete_mock.assert_called_once()
+        delete_payload = delete_mock.call_args.args[0]
+        assert delete_payload.tag_ids == ["tag-1", "tag-2"]
         assert status == 200
         assert result["result"] == "success"
 
-    def test_remove_forbidden(self, app, readonly_user, payload_patch):
-        api = TagBindingDeleteApi()
+    def test_remove_forbidden(self, app: Flask, readonly_user, payload_patch):
+        api = TagBindingRemoveApi()
         method = unwrap(api.post)
 
         with app.test_request_context("/", json={}):
@@ -297,3 +303,33 @@ class TestTagResponseModel:
 
         assert payload["type"] == "knowledge"
         assert payload["binding_count"] == "1"
+
+
+class TestTagBindingRouteMetadata:
+    def test_write_routes_are_not_deprecated(self):
+        assert TagBindingCollectionApi.post.__apidoc__.get("deprecated") is not True
+        assert TagBindingRemoveApi.post.__apidoc__.get("deprecated") is not True
+
+    def test_write_routes_have_stable_operation_ids(self):
+        assert TagBindingCollectionApi.post.__apidoc__["id"] == "create_tag_binding"
+        assert TagBindingRemoveApi.post.__apidoc__["id"] == "remove_tag_bindings"
+
+    def test_write_routes_are_registered(self):
+        route_map = {
+            resource.__name__: urls
+            for resource, urls, _route_doc, _kwargs in console_ns.resources
+            if resource.__name__
+            in {
+                "TagBindingCollectionApi",
+                "TagBindingRemoveApi",
+            }
+        }
+
+        assert route_map["TagBindingCollectionApi"] == ("/tag-bindings",)
+        assert route_map["TagBindingRemoveApi"] == ("/tag-bindings/remove",)
+
+    def test_legacy_write_routes_are_not_registered(self):
+        urls = {url for _resource, resource_urls, _route_doc, _kwargs in console_ns.resources for url in resource_urls}
+
+        assert "/tag-bindings/create" not in urls
+        assert "/tag-bindings/<uuid:id>" not in urls

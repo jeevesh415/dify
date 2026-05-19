@@ -2,9 +2,9 @@
 
 import type { MarketplaceCollection } from '../types'
 import type { Plugin } from '@/app/components/plugins/types'
-import { useLocale, useTranslation } from '#i18n'
 import { cn } from '@langgenius/dify-ui/cn'
 import { RiArrowRightSLine } from '@remixicon/react'
+import { useLocale, useTranslation } from '#i18n'
 import { getLanguage } from '@/i18n-config/language'
 import { useMarketplaceMoreClick } from '../atoms'
 import CardWrapper from './card-wrapper'
@@ -60,7 +60,7 @@ const ListWithCollection = ({
             )}
             >
               {
-                marketplaceCollectionPluginsMap[collection.name].map((plugin) => {
+                marketplaceCollectionPluginsMap[collection.name]!.map((plugin) => {
                   if (cardRender)
                     return cardRender(plugin)
 

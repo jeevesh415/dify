@@ -4,7 +4,7 @@ import {
   memo,
   useState,
 } from 'react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/base/ui/tooltip'
+import { Infotip } from '@/app/components/base/infotip'
 
 export type FieldTitleProps = {
   title?: string
@@ -62,19 +62,9 @@ export const FieldTitle = memo(({
           }
           {
             tooltip && (
-              <Tooltip>
-                <TooltipTrigger
-                  delay={0}
-                  render={(
-                    <span className="ml-1 flex h-4 w-4 shrink-0 items-center justify-center">
-                      <span aria-hidden className="i-ri-question-line h-3.5 w-3.5 text-text-quaternary hover:text-text-tertiary" />
-                    </span>
-                  )}
-                />
-                <TooltipContent>
-                  {tooltip}
-                </TooltipContent>
-              </Tooltip>
+              <Infotip aria-label={tooltip} className="ml-1">
+                {tooltip}
+              </Infotip>
             )
           }
         </div>

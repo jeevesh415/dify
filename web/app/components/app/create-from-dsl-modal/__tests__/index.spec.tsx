@@ -83,7 +83,7 @@ vi.mock('@/utils/app-redirection', () => ({
   getRedirection: (...args: unknown[]) => mockGetRedirection(...args),
 }))
 
-vi.mock('@/app/components/base/ui/toast', () => ({
+vi.mock('@langgenius/dify-ui/toast', () => ({
   toast: Object.assign(
     (...args: unknown[]) => toastMocks.call(...args),
     {
@@ -137,10 +137,10 @@ describe('CreateFromDSLModal', () => {
       />,
     )
 
-    expect(screen.getByText('importFromDSL')).toBeInTheDocument()
+    expect(screen.getByText('importApp'))!.toBeInTheDocument()
 
     await waitFor(() => {
-      expect(screen.getByText('demo.yml')).toBeInTheDocument()
+      expect(screen.getByText('demo.yml'))!.toBeInTheDocument()
     })
   })
 
@@ -159,9 +159,9 @@ describe('CreateFromDSLModal', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('importFromDSLUrl'))
     })
-    expect(screen.getByPlaceholderText('importFromDSLUrlPlaceholder')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('importFromDSLUrlPlaceholder'))!.toBeInTheDocument()
 
-    const closeTrigger = screen.getByText('importFromDSL').parentElement?.querySelector('.cursor-pointer.items-center') as HTMLElement
+    const closeTrigger = screen.getByText('importApp').parentElement?.querySelector('.cursor-pointer.items-center') as HTMLElement
     fireEvent.click(closeTrigger)
     expect(handleClose).toHaveBeenCalledTimes(1)
   })
@@ -197,7 +197,7 @@ describe('CreateFromDSLModal', () => {
       mode: DSLImportMode.YAML_URL,
       yaml_url: 'https://example.com/app.yml',
     })
-    expect(mockTrackCreateApp).toHaveBeenCalledWith({ appMode: AppModeEnum.CHAT })
+    expect(mockTrackCreateApp).toHaveBeenCalledWith({ source: 'studio_upload', appMode: AppModeEnum.CHAT })
     expect(handleSuccess).toHaveBeenCalledTimes(1)
     expect(handleClose).toHaveBeenCalledTimes(1)
     expect(localStorage.getItem(NEED_REFRESH_APP_LIST_KEY)).toBe('1')
@@ -222,7 +222,7 @@ describe('CreateFromDSLModal', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText('demo.yml')).toBeInTheDocument()
+      expect(screen.getByText('demo.yml'))!.toBeInTheDocument()
     })
 
     await act(async () => {
@@ -245,7 +245,7 @@ describe('CreateFromDSLModal', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText('demo.yml')).toBeInTheDocument()
+      expect(screen.getByText('demo.yml'))!.toBeInTheDocument()
     })
 
     const removeButton = screen.getByText('demo.yml').closest('.group')?.querySelector('button') as HTMLButtonElement
@@ -255,10 +255,11 @@ describe('CreateFromDSLModal', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('demo.yml')).not.toBeInTheDocument()
-      expect(getCreateButton()).toBeDisabled()
+      expect(getCreateButton())!.toBeDisabled()
     })
 
-    ahooksMocks.handlers.findLast(item => Array.isArray(item.keys))?.handler()
+    const latestHandlerAfterRemove = [...ahooksMocks.handlers].reverse().find(item => Array.isArray(item.keys))
+    latestHandlerAfterRemove?.handler()
     expect(mockImportDSL).not.toHaveBeenCalled()
   })
 
@@ -294,16 +295,88 @@ describe('CreateFromDSLModal', () => {
       vi.advanceTimersByTime(300)
     })
 
-    expect(screen.getAllByText('newApp.appCreateDSLErrorTitle')[0]).toBeInTheDocument()
+    expect(screen.getAllByText('newApp.appCreateDSLErrorTitle')[0])!.toBeInTheDocument()
 
     await act(async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Confirm' })[0])
+      fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Confirm' })[0]!)
     })
 
     expect(mockImportDSLConfirm).toHaveBeenCalledWith({
       import_id: 'import-3',
     })
-    expect(mockTrackCreateApp).toHaveBeenCalledWith({ appMode: AppModeEnum.WORKFLOW })
+    expect(mockTrackCreateApp).toHaveBeenCalledWith({ source: 'studio_upload', appMode: AppModeEnum.WORKFLOW })
+  })
+
+  it('should close the DSL mismatch modal when dialog requests close', async () => {
+    vi.useFakeTimers()
+    mockImportDSL.mockResolvedValue({
+      id: 'import-close',
+      status: DSLImportStatus.PENDING,
+      imported_dsl_version: '1.0.0',
+      current_dsl_version: '2.0.0',
+    })
+
+    render(
+      <CreateFromDSLModal
+        show
+        onClose={vi.fn()}
+        activeTab={CreateFromDSLModalTab.FROM_URL}
+        dslUrl="https://example.com/app.yml"
+      />,
+    )
+
+    await act(async () => {
+      fireEvent.click(getCreateButton())
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(screen.getByText('newApp.appCreateDSLErrorTitle'))!.toBeInTheDocument()
+
+    vi.useRealTimers()
+    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
+
+    await waitFor(() => {
+      expect(screen.queryByText('newApp.appCreateDSLErrorTitle')).not.toBeInTheDocument()
+    })
+  })
+
+  it('should close the DSL mismatch modal when cancel is clicked', async () => {
+    vi.useFakeTimers()
+    mockImportDSL.mockResolvedValue({
+      id: 'import-cancel',
+      status: DSLImportStatus.PENDING,
+      imported_dsl_version: '1.0.0',
+      current_dsl_version: '2.0.0',
+    })
+
+    render(
+      <CreateFromDSLModal
+        show
+        onClose={vi.fn()}
+        activeTab={CreateFromDSLModalTab.FROM_URL}
+        dslUrl="https://example.com/app.yml"
+      />,
+    )
+
+    await act(async () => {
+      fireEvent.click(getCreateButton())
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(screen.getByText('newApp.appCreateDSLErrorTitle'))!.toBeInTheDocument()
+
+    vi.useRealTimers()
+    fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Cancel' }).at(-1)!)
+
+    await waitFor(() => {
+      expect(screen.queryByText('newApp.appCreateDSLErrorTitle')).not.toBeInTheDocument()
+    })
   })
 
   it('should ignore empty import responses and prevent duplicate submissions while a request is in flight', async () => {
@@ -386,8 +459,9 @@ describe('CreateFromDSLModal', () => {
       />,
     )
 
-    expect(screen.getByText('apps-full')).toBeInTheDocument()
-    ahooksMocks.handlers.findLast(item => Array.isArray(item.keys))?.handler()
+    expect(screen.getByText('apps-full'))!.toBeInTheDocument()
+    const latestPlanLimitHandler = [...ahooksMocks.handlers].reverse().find(item => Array.isArray(item.keys))
+    latestPlanLimitHandler?.handler()
     expect(mockImportDSL).toHaveBeenCalledTimes(1)
   })
 
@@ -395,6 +469,7 @@ describe('CreateFromDSLModal', () => {
     mockImportDSL.mockResolvedValueOnce({
       id: 'import-failed',
       status: DSLImportStatus.FAILED,
+      error: 'Invalid YAML format',
     })
     mockImportDSL.mockRejectedValueOnce(new Error('boom'))
 
@@ -410,7 +485,7 @@ describe('CreateFromDSLModal', () => {
     await act(async () => {
       fireEvent.click(getCreateButton())
     })
-    expect(toastMocks.error).toHaveBeenCalledWith('newApp.appCreateFailed')
+    expect(toastMocks.error).toHaveBeenCalledWith('Invalid YAML format')
 
     rerender(
       <CreateFromDSLModal
@@ -425,6 +500,7 @@ describe('CreateFromDSLModal', () => {
       fireEvent.click(getCreateButton())
     })
     expect(toastMocks.error).toHaveBeenCalledTimes(2)
+    expect(toastMocks.error).toHaveBeenLastCalledWith('newApp.appCreateFailed')
   })
 
   it('should handle pending import confirmation failures and cancellation', async () => {
@@ -436,7 +512,7 @@ describe('CreateFromDSLModal', () => {
       current_dsl_version: '2.0.0',
     })
     mockImportDSLConfirm
-      .mockResolvedValueOnce({ status: DSLImportStatus.FAILED })
+      .mockResolvedValueOnce({ status: DSLImportStatus.FAILED, error: 'Confirm failed' })
       .mockRejectedValueOnce(new Error('boom'))
 
     render(
@@ -461,13 +537,14 @@ describe('CreateFromDSLModal', () => {
       vi.advanceTimersByTime(300)
     })
     await act(async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Confirm' })[0])
+      fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Confirm' })[0]!)
     })
-    expect(toastMocks.error).toHaveBeenCalledWith('newApp.appCreateFailed')
+    expect(toastMocks.error).toHaveBeenCalledWith('Confirm failed')
 
     await act(async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Confirm' })[0])
+      fireEvent.click(screen.getAllByRole('button', { name: 'newApp.Confirm' })[0]!)
     })
     expect(toastMocks.error).toHaveBeenCalledTimes(2)
+    expect(toastMocks.error).toHaveBeenLastCalledWith('newApp.appCreateFailed')
   })
 })

@@ -1,8 +1,8 @@
 import type { FC } from 'react'
+import { Button } from '@langgenius/dify-ui/button'
 import { RiHistoryLine } from '@remixicon/react'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/app/components/base/ui/button'
 
 type EmptyProps = {
   onResetFilter: () => void
@@ -22,7 +22,7 @@ const Empty: FC<EmptyProps> = ({
         {t('versionHistory.filter.empty', { ns: 'workflow' })}
       </div>
       <div className="flex justify-center">
-        <Button size="small" onClick={onResetFilter}>
+        <Button nativeButton={false} size="small" onClick={onResetFilter}>
           {t('versionHistory.filter.reset', { ns: 'workflow' })}
         </Button>
       </div>

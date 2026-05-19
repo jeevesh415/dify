@@ -1,9 +1,9 @@
 'use client'
 import type { Plugin } from '../types'
-import { useTranslation } from '#i18n'
 import { cn } from '@langgenius/dify-ui/cn'
 import { RiAlertFill } from '@remixicon/react'
 import * as React from 'react'
+import { useTranslation } from '#i18n'
 import { useSelector } from '@/context/app-context'
 import { useGetLanguage } from '@/context/i18n'
 import useTheme from '@/hooks/use-theme'
@@ -77,7 +77,7 @@ const Card = ({
   return (
     <div className={wrapClassName}>
       <div className={cn('p-4 pb-3', limitedInstall && 'pb-1')}>
-        {!hideCornerMark && <CornerMark text={categoriesMap[type === 'bundle' ? type : category]?.label} />}
+        {!hideCornerMark && <CornerMark text={categoriesMap[type === 'bundle' ? type : category]?.label!} />}
         {/* Header */}
         <div className="flex">
           <Icon src={iconSrc} installed={installed} installFailed={installFailed} />

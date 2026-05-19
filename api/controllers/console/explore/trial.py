@@ -3,8 +3,6 @@ from typing import Any, Literal, cast
 
 from flask import request
 from flask_restx import Resource, fields, marshal, marshal_with
-from graphon.graph_engine.manager import GraphEngineManager
-from graphon.model_runtime.errors.invoke import InvokeError
 from pydantic import BaseModel
 from sqlalchemy import select
 from werkzeug.exceptions import Forbidden, InternalServerError, NotFound
@@ -12,7 +10,7 @@ from werkzeug.exceptions import Forbidden, InternalServerError, NotFound
 import services
 from controllers.common.fields import Parameters as ParametersResponse
 from controllers.common.fields import Site as SiteResponse
-from controllers.common.schema import get_or_create_model
+from controllers.common.schema import get_or_create_model, register_schema_models
 from controllers.console import console_ns
 from controllers.console.app.error import (
     AppUnavailableError,
@@ -61,6 +59,8 @@ from fields.workflow_fields import (
     workflow_fields,
     workflow_partial_fields,
 )
+from graphon.graph_engine.manager import GraphEngineManager
+from graphon.model_runtime.errors.invoke import InvokeError
 from libs import helper
 from libs.helper import uuid_value
 from libs.login import current_user
@@ -106,7 +106,7 @@ app_detail_fields_with_site_copy["tags"] = fields.List(fields.Nested(tag_model))
 app_detail_fields_with_site_copy["site"] = fields.Nested(site_model)
 app_detail_with_site_model = get_or_create_model("TrialAppDetailWithSite", app_detail_fields_with_site_copy)
 
-simple_account_model = get_or_create_model("SimpleAccount", simple_account_fields)
+simple_account_model = get_or_create_model("TrialSimpleAccount", simple_account_fields)
 conversation_variable_model = get_or_create_model("TrialConversationVariable", conversation_variable_fields)
 pipeline_variable_model = get_or_create_model("TrialPipelineVariable", pipeline_variable_fields)
 
@@ -118,10 +118,6 @@ workflow_fields_copy["updated_by"] = fields.Nested(
 workflow_fields_copy["conversation_variables"] = fields.List(fields.Nested(conversation_variable_model))
 workflow_fields_copy["rag_pipeline_variables"] = fields.List(fields.Nested(pipeline_variable_model))
 workflow_model = get_or_create_model("TrialWorkflow", workflow_fields_copy)
-
-
-# Pydantic models for request validation
-DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
 
 
 class WorkflowRunRequest(BaseModel):
@@ -153,19 +149,7 @@ class CompletionRequest(BaseModel):
     retriever_from: str = "explore_app"
 
 
-# Register schemas for Swagger documentation
-console_ns.schema_model(
-    WorkflowRunRequest.__name__, WorkflowRunRequest.model_json_schema(ref_template=DEFAULT_REF_TEMPLATE_SWAGGER_2_0)
-)
-console_ns.schema_model(
-    ChatRequest.__name__, ChatRequest.model_json_schema(ref_template=DEFAULT_REF_TEMPLATE_SWAGGER_2_0)
-)
-console_ns.schema_model(
-    TextToSpeechRequest.__name__, TextToSpeechRequest.model_json_schema(ref_template=DEFAULT_REF_TEMPLATE_SWAGGER_2_0)
-)
-console_ns.schema_model(
-    CompletionRequest.__name__, CompletionRequest.model_json_schema(ref_template=DEFAULT_REF_TEMPLATE_SWAGGER_2_0)
-)
+register_schema_models(console_ns, WorkflowRunRequest, ChatRequest, TextToSpeechRequest, CompletionRequest)
 
 
 class TrialAppWorkflowRunApi(TrialAppResource):

@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react'
 import type { Mock } from 'vitest'
 import type { CreateAppModalProps } from '@/app/components/explore/create-app-modal'
 import type { App } from '@/models/explore'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { createSystemFeaturesWrapper } from '@/__tests__/utils/mock-system-features'
 import { useAppContext } from '@/context/app-context'
-import { useGlobalPublicStore } from '@/context/global-public-context'
 import { fetchAppDetail } from '@/service/explore'
 import { useMembers } from '@/service/use-common'
 import { renderWithNuqs } from '@/test/nuqs-testing'
@@ -114,7 +115,7 @@ const createApp = (overrides: Partial<App> = {}): App => ({
   copyright: overrides.copyright ?? '',
   privacy_policy: overrides.privacy_policy ?? null,
   custom_disclaimer: overrides.custom_disclaimer ?? null,
-  category: overrides.category ?? 'Writing',
+  categories: overrides.categories ?? ['Writing'],
   position: overrides.position ?? 1,
   is_listed: overrides.is_listed ?? true,
   install_count: overrides.install_count ?? 0,
@@ -134,12 +135,28 @@ const mockMemberRole = (hasEditPermission: boolean) => {
   })
 }
 
-const renderAppList = (hasEditPermission = false, onSuccess?: () => void, searchParams?: Record<string, string>) => {
+type RenderOptions = {
+  enableExploreBanner?: boolean
+}
+
+const renderAppList = (
+  hasEditPermission = false,
+  onSuccess?: () => void,
+  searchParams?: Record<string, string>,
+  options: RenderOptions = {},
+) => {
   mockMemberRole(hasEditPermission)
-  return renderWithNuqs(
-    <AppList onSuccess={onSuccess} />,
+  const { wrapper: SystemFeaturesWrapper, queryClient } = createSystemFeaturesWrapper({
+    systemFeatures: { enable_explore_banner: options.enableExploreBanner ?? false },
+  })
+  const Wrapped = ({ children }: { children: ReactNode }) => (
+    <SystemFeaturesWrapper>{children}</SystemFeaturesWrapper>
+  )
+  const rendered = renderWithNuqs(
+    <Wrapped><AppList onSuccess={onSuccess} /></Wrapped>,
     { searchParams },
   )
+  return { ...rendered, queryClient }
 }
 
 describe('AppList', () => {
@@ -168,7 +185,7 @@ describe('AppList', () => {
     it('should render app cards when data is available', () => {
       mockExploreData = {
         categories: ['Writing', 'Translate'],
-        allList: [createApp(), createApp({ app_id: 'app-2', app: { ...createApp().app, name: 'Beta' }, category: 'Translate' })],
+        allList: [createApp(), createApp({ app_id: 'app-2', app: { ...createApp().app, name: 'Beta' }, categories: ['Translate'] })],
       }
 
       renderAppList()
@@ -182,7 +199,7 @@ describe('AppList', () => {
     it('should filter apps by selected category', () => {
       mockExploreData = {
         categories: ['Writing', 'Translate'],
-        allList: [createApp(), createApp({ app_id: 'app-2', app: { ...createApp().app, name: 'Beta' }, category: 'Translate' })],
+        allList: [createApp(), createApp({ app_id: 'app-2', app: { ...createApp().app, name: 'Beta' }, categories: ['Translate'] })],
       }
 
       renderAppList(false, undefined, { category: 'Writing' })
@@ -222,8 +239,8 @@ describe('AppList', () => {
       mockHandleImportDSL.mockImplementation(async (_payload: unknown, options: { onSuccess?: () => void, onPending?: () => void }) => {
         options.onPending?.()
       })
-      mockHandleImportDSLConfirm.mockImplementation(async (options: { onSuccess?: () => void }) => {
-        options.onSuccess?.()
+      mockHandleImportDSLConfirm.mockImplementation(async (options: { onSuccess?: (payload: { app_mode: AppModeEnum }) => void }) => {
+        options.onSuccess?.({ app_mode: AppModeEnum.CHAT })
       })
 
       renderAppList(true, onSuccess)
@@ -240,7 +257,9 @@ describe('AppList', () => {
       await waitFor(() => {
         expect(mockHandleImportDSLConfirm).toHaveBeenCalledTimes(1)
         expect(mockTrackCreateApp).toHaveBeenCalledWith({
+          source: 'explore_template_list',
           appMode: AppModeEnum.CHAT,
+          templateId: 'app-1',
         })
         expect(onSuccess).toHaveBeenCalledTimes(1)
       })
@@ -262,7 +281,7 @@ describe('AppList', () => {
       })
       expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
 
-      fireEvent.click(screen.getByTestId('input-clear'))
+      fireEvent.click(screen.getByRole('button', { name: 'common.operation.clear' }))
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500)
       })
@@ -334,8 +353,8 @@ describe('AppList', () => {
         allList: [createApp()],
       };
       (fetchAppDetail as unknown as Mock).mockResolvedValue({ export_data: 'yaml', mode: AppModeEnum.CHAT })
-      mockHandleImportDSL.mockImplementation(async (_payload: unknown, options: { onSuccess?: () => void }) => {
-        options.onSuccess?.()
+      mockHandleImportDSL.mockImplementation(async (_payload: unknown, options: { onSuccess?: (payload: { app_mode: AppModeEnum }) => void }) => {
+        options.onSuccess?.({ app_mode: AppModeEnum.CHAT })
       })
 
       renderAppList(true)
@@ -400,8 +419,8 @@ describe('AppList', () => {
         allList: [createApp()],
       };
       (fetchAppDetail as unknown as Mock).mockResolvedValue({ export_data: 'yaml', mode: AppModeEnum.CHAT })
-      mockHandleImportDSL.mockImplementation(async (_payload: unknown, options: { onSuccess?: () => void }) => {
-        options.onSuccess?.()
+      mockHandleImportDSL.mockImplementation(async (_payload: unknown, options: { onSuccess?: (payload: { app_mode: AppModeEnum }) => void }) => {
+        options.onSuccess?.({ app_mode: AppModeEnum.CHAT })
       })
 
       renderAppList(true)
@@ -412,7 +431,9 @@ describe('AppList', () => {
 
       await waitFor(() => {
         expect(mockTrackCreateApp).toHaveBeenCalledWith({
+          source: 'explore_template_preview',
           appMode: AppModeEnum.CHAT,
+          templateId: 'app-1',
         })
       })
     })
@@ -435,18 +456,12 @@ describe('AppList', () => {
 
   describe('Banner', () => {
     it('should render banner when enable_explore_banner is true', () => {
-      useGlobalPublicStore.setState({
-        systemFeatures: {
-          ...useGlobalPublicStore.getState().systemFeatures,
-          enable_explore_banner: true,
-        },
-      })
       mockExploreData = {
         categories: ['Writing'],
         allList: [createApp()],
       }
 
-      renderAppList()
+      renderAppList(false, undefined, undefined, { enableExploreBanner: true })
 
       expect(screen.getByTestId('explore-banner')).toBeInTheDocument()
     })

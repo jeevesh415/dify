@@ -1,18 +1,19 @@
 'use client'
 import type { FormEvent } from 'react'
+import { Button } from '@langgenius/dify-ui/button'
+import { toast } from '@langgenius/dify-ui/toast'
 import { RiArrowLeftLine, RiMailSendFill } from '@remixicon/react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { trackEvent } from '@/app/components/base/amplitude'
 import Input from '@/app/components/base/input'
-import { Button } from '@/app/components/base/ui/button'
-import { toast } from '@/app/components/base/ui/toast'
 import Countdown from '@/app/components/signin/countdown'
 import { useLocale } from '@/context/i18n'
 
 import { useRouter, useSearchParams } from '@/next/navigation'
 import { emailLoginWithCode, sendEMailLoginCode } from '@/service/common'
 import { encryptVerificationCode } from '@/utils/encryption'
+import { getBrowserTimezone } from '@/utils/timezone'
 import { resolvePostLoginRedirect } from '../utils/post-login-redirect'
 
 export default function CheckCode() {
@@ -39,7 +40,13 @@ export default function CheckCode() {
         return
       }
       setIsLoading(true)
-      const ret = await emailLoginWithCode({ email, code: encryptVerificationCode(code), token, language })
+      const ret = await emailLoginWithCode({
+        email,
+        code: encryptVerificationCode(code),
+        token,
+        language,
+        timezone: getBrowserTimezone(),
+      })
       if (ret.result === 'success') {
         // Track login success event
         trackEvent('user_login_success', {
@@ -51,7 +58,7 @@ export default function CheckCode() {
           router.replace(`/signin/invite-settings?${searchParams.toString()}`)
         }
         else {
-          const redirectUrl = resolvePostLoginRedirect()
+          const redirectUrl = resolvePostLoginRedirect(searchParams)
           router.replace(redirectUrl || '/apps')
         }
       }

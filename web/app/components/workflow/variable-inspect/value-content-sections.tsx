@@ -11,7 +11,7 @@ import { SupportUploadFileTypes } from '@/app/components/workflow/types'
 import { TransferMethod } from '@/types/app'
 import { PreviewMode } from '../../base/features/types'
 import BoolValue from '../panel/chat-variable-panel/components/bool-value'
-import DisplayContent from './display-content'
+import { DisplayContent } from './display-content'
 import LargeDataAlert from './large-data-alert'
 import { PreviewType } from './types'
 
@@ -155,10 +155,10 @@ export const FileEditorSection = ({
             SupportUploadFileTypes.video,
           ],
           allowed_file_extensions: [
-            ...FILE_EXTS[SupportUploadFileTypes.image],
-            ...FILE_EXTS[SupportUploadFileTypes.document],
-            ...FILE_EXTS[SupportUploadFileTypes.audio],
-            ...FILE_EXTS[SupportUploadFileTypes.video],
+            ...(FILE_EXTS[SupportUploadFileTypes.image] ?? []),
+            ...(FILE_EXTS[SupportUploadFileTypes.document] ?? []),
+            ...(FILE_EXTS[SupportUploadFileTypes.audio] ?? []),
+            ...(FILE_EXTS[SupportUploadFileTypes.video] ?? []),
           ],
           allowed_file_upload_methods: [TransferMethod.local_file, TransferMethod.remote_url],
           number_limits: currentVar.value_type === 'file' ? 1 : fileUploadConfig?.workflow_file_upload_limit || 5,
